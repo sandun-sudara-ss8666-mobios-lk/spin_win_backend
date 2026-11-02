@@ -1,0 +1,435 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+}
+
+enum DayStatus {
+  UPCOMING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum QrTokenStatus {
+  ACTIVE
+  CLAIMED
+  EXPIRED
+}
+
+enum RegSessionStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+}
+
+enum ParticipationStatus {
+  WAITING
+  SELECTED
+  SPINNING
+  COMPLETED
+  SKIPPED
+  DAY_CLOSED
+}
+
+enum RewardType {
+  PHYSICAL
+  VOUCHER
+  MERCHANDISE
+  NO_WIN
+}
+
+enum InventoryMode {
+  LIMITED
+  UNLIMITED
+  NO_WIN
+}
+
+enum DistributionStrategy {
+  EXHIBITION_WIDE
+  AUTO_DAILY
+  CUSTOM_DAILY
+}
+
+enum StockLedgerType {
+  INITIAL_STOCK
+  ADMIN_ADJUSTMENT
+  AUTO_DISTRIBUTION
+  SPIN_AWARD
+  AWARD_CANCELLED_RETURN_PACING
+  AWARD_CANCELLED_RETURN_IMMEDIATE
+  AWARD_CANCELLED_RETIRE
+  CARRY_FORWARD_APPLIED
+  DAY_CLOSE_RESET
+}
+
+enum AwardStatus {
+  AWARDED
+  CANCELLED
+}
+
+enum CancellationResolution {
+  IMMEDIATE_RETURN
+  RETURN_TO_PACING
+  RETIRE
+}
+
+enum PriorityListStatus {
+  DRAFT
+  PUBLISHED
+  INACTIVE
+}
+
+enum SpinStatus {
+  SELECTED
+  STARTING
+  ANIMATING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  name         String
+  role         Role       @default(ADMIN)
+  isActive     Boolean    @default(true) @map("is_active")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model Exhibition {
+  id               String          @id @default(uuid())
+  name             String
+  description      String?
+  timezone         String          @default("Asia/Colombo")
+  isActive         Boolean         @default(true) @map("is_active")
+  isPaused         Boolean         @default(false) @map("is_paused")
+  pacingStartTime  String          @default("09:00:00") @map("pacing_start_time")
+  pacingEndTime    String          @default("21:00:00") @map("pacing_end_time")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+  days             ExhibitionDay[]
+  qrTokens         QrSessionToken[]
+
+  @@map("exhibitions")
+}
+
+model ExhibitionDay {
+  id               String          @id @default(uuid())
+  exhibitionId     String          @map("exhibition_id")
+  dayNumber        Int             @map("day_number")
+  date             String          @db.VarChar(10) // YYYY-MM-DD
+  label            String
+  status           DayStatus       @default(UPCOMING)
+  actualStartedAt  DateTime?       @map("actual_started_at")
+  actualEndedAt    DateTime?       @map("actual_ended_at")
+  pacingStartTime  String          @default("09:00:00") @map("pacing_start_time")
+  pacingEndTime    String          @default("21:00:00") @map("pacing_end_time")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  exhibition       Exhibition      @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  participations   Participation[]
+  dailyAllocations DailyAllocation[]
+  stockLedger      StockLedgerEntry[]
+  spins            SpinRecord[]
+  awards           Award[]
+  qrTokens         QrSessionToken[]
+  regSessions      VisitorRegistrationSession[]
+
+  @@unique([exhibitionId, dayNumber])
+  @@unique([exhibitionId, date])
+  @@index([status])
+  @@map("exhibition_days")
+}
+
+model QrSessionToken {
+  id              String         @id @default(uuid())
+  token           String         @unique @db.VarChar(64)
+  exhibitionId    String         @map("exhibition_id")
+  exhibitionDayId String         @map("exhibition_day_id")
+  status          QrTokenStatus  @default(ACTIVE)
+  expiresAt       DateTime       @map("expires_at")
+  claimedAt       DateTime?      @map("claimed_at")
+  claimedByIp     String?        @map("claimed_by_ip")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  exhibition      Exhibition     @relation(fields: [exhibitionId], references: [id], onDelete: Cascade)
+  exhibitionDay   ExhibitionDay  @relation(fields: [exhibitionDayId], references: [id], onDelete: Cascade)
+  regSession      VisitorRegistrationSession?
+
+  @@index([token, status, expiresAt])
+  @@map("qr_session_tokens")
+}
+
+model VisitorRegistrationSession {
+  id              String           @id @default(uuid())
+  sessionToken    String           @unique @map("session_token") @db.VarChar(64)
+  qrTokenId       String           @unique @map("qr_token_id")
+  exhibitionDayId String           @map("exhibition_day_id")
+  status          RegSessionStatus @default(PENDING)
+  expiresAt       DateTime         @map("expires_at")
+  completedAt     DateTime?        @map("completed_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  qrToken         QrSessionToken   @relation(fields: [qrTokenId], references: [id], onDelete: Cascade)
+  exhibitionDay   ExhibitionDay    @relation(fields: [exhibitionDayId], references: [id], onDelete: Cascade)
+  participation   Participation?
+
+  @@index([sessionToken, status, expiresAt])
+  @@map("visitor_registration_sessions")
+}
+
+model Participation {
+  id              String              @id @default(uuid())
+  readableRef     String              @unique @map("readable_ref") @db.VarChar(20)
+  exhibitionDayId String              @map("exhibition_day_id")
+  regSessionId    String?             @unique @map("reg_session_id")
+  visitorName     String              @map("visitor_name")
+  visitorPhone    String              @map("visitor_phone") @db.VarChar(20) // Normalized E.164
+  visitorPhoneRaw String              @map("visitor_phone_raw") @db.VarChar(30)
+  status          ParticipationStatus @default(WAITING)
+  registeredAt    DateTime            @default(now()) @map("registered_at")
+  selectedAt      DateTime?           @map("selected_at")
+  completedAt     DateTime?           @map("completed_at")
+  notes           String?
+
+  exhibitionDay   ExhibitionDay       @relation(fields: [exhibitionDayId], references: [id], onDelete: Cascade)
+  regSession      VisitorRegistrationSession? @relation(fields: [regSessionId], references: [id], onDelete: SetNull)
+  spin            SpinRecord?
+  awards          Award[]
+
+  @@index([exhibitionDayId, status, registeredAt])
+  @@index([visitorPhone])
+  @@index([readableRef])
+  @@map("participations")
+}
+
+model Merchant {
+  id           String    @id @default(uuid())
+  name         String
+  slug         String    @unique
+  logoUrl      String?   @map("logo_url")
+  primaryColor String?   @map("primary_color") @db.VarChar(10)
+  contactEmail String?   @map("contact_email")
+  contactPhone String?   @map("contact_phone")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  rewards      Reward[]
+
+  @@map("merchants")
+}
+
+model Reward {
+  id                   String               @id @default(uuid())
+  merchantId           String?              @map("merchant_id")
+  name                 String
+  description          String?
+  type                 RewardType           @default(PHYSICAL)
+  shortLabel           String               @map("short_label") @db.VarChar(24)
+  inventoryMode        InventoryMode        @default(LIMITED) @map("inventory_mode")
+  distributionStrategy DistributionStrategy @default(AUTO_DAILY) @map("distribution_strategy")
+  totalPhysicalStock   Int                  @default(0) @map("total_physical_stock")
+  availablePhysicalStock Int                @default(0) @map("available_physical_stock")
+  retiredStock         Int                  @default(0) @map("retired_stock")
+  carryForward         Boolean              @default(true) @map("carry_forward")
+  isActive             Boolean              @default(true) @map("is_active")
+  effectiveStartAt     DateTime?            @map("effective_start_at")
+  baselineWeight       Int                  @default(3) @map("baseline_weight")
+  colorHex             String?              @map("color_hex") @db.VarChar(10)
+  iconUrl              String?              @map("icon_url")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
+
+  merchant             Merchant?            @relation(fields: [merchantId], references: [id], onDelete: SetNull)
+  dailyAllocations     DailyAllocation[]
+  stockLedger          StockLedgerEntry[]
+  spins                SpinRecord[]
+  awards               Award[]
+  priorityItems        PriorityListItem[]
+  slices               WheelSlice[]
+
+  @@index([isActive, inventoryMode])
+  @@map("rewards")
+}
+
+model DailyAllocation {
+  id                      String        @id @default(uuid())
+  rewardId                String        @map("reward_id")
+  exhibitionDayId         String        @map("exhibition_day_id")
+  allocatedQuantity       Int           @default(0) @map("allocated_quantity")
+  carriedForwardQuantity  Int           @default(0) @map("carried_forward_quantity")
+  awardedQuantity         Int           @default(0) @map("awarded_quantity")
+  isFinalized             Boolean       @default(false) @map("is_finalized")
+  createdAt               DateTime      @default(now()) @map("created_at")
+  updatedAt               DateTime      @updatedAt @map("updated_at")
+
+  reward                  Reward        @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  exhibitionDay           ExhibitionDay @relation(fields: [exhibitionDayId], references: [id], onDelete: Cascade)
+
+  @@unique([rewardId, exhibitionDayId])
+  @@map("daily_allocations")
+}
+
+model StockLedgerEntry {
+  id              String          @id @default(uuid())
+  rewardId        String          @map("reward_id")
+  exhibitionDayId String?         @map("exhibition_day_id")
+  entryType       StockLedgerType @map("entry_type")
+  quantityDelta   Int             @map("quantity_delta") // positive or negative
+  balanceAfter    Int             @map("balance_after")
+  referenceId     String?         @map("reference_id")
+  notes           String?
+  createdBy       String?         @map("created_by")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  reward          Reward          @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  exhibitionDay   ExhibitionDay?  @relation(fields: [exhibitionDayId], references: [id], onDelete: SetNull)
+
+  @@index([rewardId, createdAt])
+  @@map("stock_ledger_entries")
+}
+
+model Award {
+  id                     String                  @id @default(uuid())
+  spinId                 String                  @unique @map("spin_id")
+  participationId        String                  @map("participation_id")
+  rewardId               String                  @map("reward_id")
+  exhibitionDayId        String                  @map("exhibition_day_id")
+  status                 AwardStatus             @default(AWARDED)
+  cancellationReason     String?                 @map("cancellation_reason")
+  cancellationResolution CancellationResolution? @map("cancellation_resolution")
+  cancelledBy            String?                 @map("cancelled_by")
+  cancelledAt            DateTime?               @map("cancelled_at")
+  createdAt              DateTime                @default(now()) @map("created_at")
+
+  spin                   SpinRecord              @relation(fields: [spinId], references: [id], onDelete: Cascade)
+  participation          Participation           @relation(fields: [participationId], references: [id], onDelete: Cascade)
+  reward                 Reward                  @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  exhibitionDay          ExhibitionDay           @relation(fields: [exhibitionDayId], references: [id], onDelete: Cascade)
+
+  @@index([exhibitionDayId, status])
+  @@map("awards")
+}
+
+model PriorityList {
+  id          String             @id @default(uuid())
+  name        String
+  status      PriorityListStatus @default(DRAFT)
+  version     Int                @default(1)
+  publishedAt DateTime?          @map("published_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  items       PriorityListItem[]
+
+  @@index([status])
+  @@map("priority_lists")
+}
+
+model PriorityListItem {
+  id             String       @id @default(uuid())
+  priorityListId String       @map("priority_list_id")
+  rewardId       String       @map("reward_id")
+  rank           Int          // 1..N strictly ordered
+  multiplier     Float        @default(1.0)
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  priorityList   PriorityList @relation(fields: [priorityListId], references: [id], onDelete: Cascade)
+  reward         Reward       @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+
+  @@unique([priorityListId, rank])
+  @@unique([priorityListId, rewardId])
+  @@map("priority_list_items")
+}
+
+model WheelConfig {
+  id          String       @id @default(uuid())
+  version     Int          @unique
+  name        String
+  isPublished Boolean      @default(false) @map("is_published")
+  sliceCount  Int          @default(12) @map("slice_count")
+  createdBy   String?      @map("created_by")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  slices      WheelSlice[]
+  spins       SpinRecord[]
+
+  @@index([isPublished])
+  @@map("wheel_configs")
+}
+
+model WheelSlice {
+  id              String       @id @default(uuid())
+  wheelConfigId   String       @map("wheel_config_id")
+  sliceIndex      Int          @map("slice_index")
+  rewardId        String?      @map("reward_id")
+  isNoWin         Boolean      @default(false) @map("is_no_win")
+  label           String       @db.VarChar(50)
+  backgroundColor String       @map("background_color") @db.VarChar(20)
+  textColor       String       @map("text_color") @db.VarChar(20)
+  iconUrl         String?      @map("icon_url")
+
+  wheelConfig     WheelConfig  @relation(fields: [wheelConfigId], references: [id], onDelete: Cascade)
+  reward          Reward?      @relation(fields: [rewardId], references: [id], onDelete: SetNull)
+  spins           SpinRecord[]
+
+  @@unique([wheelConfigId, sliceIndex])
+  @@map("wheel_slices")
+}
+
+model SpinRecord {
+  id             String        @id @default(uuid())
+  participationId String       @unique @map("participation_id")
+  exhibitionDayId String       @map("exhibition_day_id")
+  wheelConfigId  String        @map("wheel_config_id")
+  wheelSliceId   String        @map("wheel_slice_id")
+  rewardId       String?       @map("reward_id")
+  sliceIndex     Int           @map("slice_index")
+  isWin          Boolean       @default(false) @map("is_win")
+  idempotencyKey String        @unique @map("idempotency_key") @db.VarChar(64)
+  status         SpinStatus    @default(SELECTED)
+  startedAt      DateTime      @default(now()) @map("started_at")
+  completedAt    DateTime?     @map("completed_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  participation  Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
+  exhibitionDay  ExhibitionDay @relation(fields: [exhibitionDayId], references: [id], onDelete: Cascade)
+  wheelConfig    WheelConfig   @relation(fields: [wheelConfigId], references: [id], onDelete: Cascade)
+  wheelSlice     WheelSlice    @relation(fields: [wheelSliceId], references: [id], onDelete: Cascade)
+  reward         Reward?       @relation(fields: [rewardId], references: [id], onDelete: SetNull)
+  award          Award?
+
+  @@index([exhibitionDayId, status])
+  @@map("spin_records")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?  @map("user_id")
+  userEmail    String?  @map("user_email")
+  action       String   @db.VarChar(100)
+  resourceType String   @map("resource_type") @db.VarChar(100)
+  resourceId   String?  @map("resource_id") @db.VarChar(100)
+  payload      String?  @db.Text
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  userAgent    String?  @map("user_agent")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([action, createdAt])
+  @@index([resourceType, resourceId])
+  @@map("audit_logs")
+}

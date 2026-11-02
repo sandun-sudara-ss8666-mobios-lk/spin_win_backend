@@ -6,12 +6,12 @@ export declare class ExhibitionsController {
     getCurrentExhibition(): Promise<({
         days: {
             id: string;
-            pacingStartTime: string;
-            pacingEndTime: string;
             createdAt: Date;
             updatedAt: Date;
-            dayNumber: number;
+            pacingStartTime: string;
+            pacingEndTime: string;
             exhibitionId: string;
+            dayNumber: number;
             date: string;
             label: string;
             status: import(".prisma/client").$Enums.DayStatus;
@@ -21,36 +21,36 @@ export declare class ExhibitionsController {
     } & {
         id: string;
         name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
         timezone: string;
-        isActive: boolean;
         isPaused: boolean;
         pacingStartTime: string;
         pacingEndTime: string;
-        createdAt: Date;
-        updatedAt: Date;
     }) | null>;
     getActiveDay(): Promise<({
         exhibition: {
             id: string;
             name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
             description: string | null;
             timezone: string;
-            isActive: boolean;
             isPaused: boolean;
             pacingStartTime: string;
             pacingEndTime: string;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;
-        pacingStartTime: string;
-        pacingEndTime: string;
         createdAt: Date;
         updatedAt: Date;
-        dayNumber: number;
+        pacingStartTime: string;
+        pacingEndTime: string;
         exhibitionId: string;
+        dayNumber: number;
         date: string;
         label: string;
         status: import(".prisma/client").$Enums.DayStatus;
@@ -61,23 +61,23 @@ export declare class ExhibitionsController {
         exhibition: {
             id: string;
             name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
             description: string | null;
             timezone: string;
-            isActive: boolean;
             isPaused: boolean;
             pacingStartTime: string;
             pacingEndTime: string;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;
-        pacingStartTime: string;
-        pacingEndTime: string;
         createdAt: Date;
         updatedAt: Date;
-        dayNumber: number;
+        pacingStartTime: string;
+        pacingEndTime: string;
         exhibitionId: string;
+        dayNumber: number;
         date: string;
         label: string;
         status: import(".prisma/client").$Enums.DayStatus;
@@ -90,23 +90,23 @@ export declare class ExhibitionsController {
             exhibition: {
                 id: string;
                 name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
                 description: string | null;
                 timezone: string;
-                isActive: boolean;
                 isPaused: boolean;
                 pacingStartTime: string;
                 pacingEndTime: string;
-                createdAt: Date;
-                updatedAt: Date;
             };
         } & {
             id: string;
-            pacingStartTime: string;
-            pacingEndTime: string;
             createdAt: Date;
             updatedAt: Date;
-            dayNumber: number;
+            pacingStartTime: string;
+            pacingEndTime: string;
             exhibitionId: string;
+            dayNumber: number;
             date: string;
             label: string;
             status: import(".prisma/client").$Enums.DayStatus;
@@ -120,23 +120,23 @@ export declare class ExhibitionsController {
             exhibition: {
                 id: string;
                 name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
                 description: string | null;
                 timezone: string;
-                isActive: boolean;
                 isPaused: boolean;
                 pacingStartTime: string;
                 pacingEndTime: string;
-                createdAt: Date;
-                updatedAt: Date;
             };
         } & {
             id: string;
-            pacingStartTime: string;
-            pacingEndTime: string;
             createdAt: Date;
             updatedAt: Date;
-            dayNumber: number;
+            pacingStartTime: string;
+            pacingEndTime: string;
             exhibitionId: string;
+            dayNumber: number;
             date: string;
             label: string;
             status: import(".prisma/client").$Enums.DayStatus;
@@ -150,23 +150,23 @@ export declare class ExhibitionsController {
             exhibition: {
                 id: string;
                 name: string;
+                isActive: boolean;
+                createdAt: Date;
+                updatedAt: Date;
                 description: string | null;
                 timezone: string;
-                isActive: boolean;
                 isPaused: boolean;
                 pacingStartTime: string;
                 pacingEndTime: string;
-                createdAt: Date;
-                updatedAt: Date;
             };
         } & {
             id: string;
-            pacingStartTime: string;
-            pacingEndTime: string;
             createdAt: Date;
             updatedAt: Date;
-            dayNumber: number;
+            pacingStartTime: string;
+            pacingEndTime: string;
             exhibitionId: string;
+            dayNumber: number;
             date: string;
             label: string;
             status: import(".prisma/client").$Enums.DayStatus;
@@ -177,12 +177,12 @@ export declare class ExhibitionsController {
     }>;
     updateDay(dayId: string, dto: UpdateDayDto, userId: string, userEmail: string): Promise<{
         id: string;
-        pacingStartTime: string;
-        pacingEndTime: string;
         createdAt: Date;
         updatedAt: Date;
-        dayNumber: number;
+        pacingStartTime: string;
+        pacingEndTime: string;
         exhibitionId: string;
+        dayNumber: number;
         date: string;
         label: string;
         status: import(".prisma/client").$Enums.DayStatus;
@@ -192,25 +192,25 @@ export declare class ExhibitionsController {
     pauseExhibition(exhibitionId: string, userId: string, userEmail: string): Promise<{
         id: string;
         name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
         timezone: string;
-        isActive: boolean;
         isPaused: boolean;
         pacingStartTime: string;
         pacingEndTime: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     resumeExhibition(exhibitionId: string, userId: string, userEmail: string): Promise<{
         id: string;
         name: string;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
         description: string | null;
         timezone: string;
-        isActive: boolean;
         isPaused: boolean;
         pacingStartTime: string;
         pacingEndTime: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
 }

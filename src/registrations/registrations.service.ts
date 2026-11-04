@@ -8,13 +8,17 @@ import {
 import * as crypto from 'crypto';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { PhoneUtils } from '../common/utils/phone.util';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { RegisterVisitorDto, QueryQueueDto } from './dto/register-visitor.dto';
 
 @Injectable()
 export class RegistrationsService {
   private readonly logger = new Logger(RegistrationsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtime: RealtimeGateway,
+  ) {}
 
   /**
    * Generates a readable 8-character reference code (e.g. SPIN-4K8P)
@@ -49,7 +53,7 @@ export class RegistrationsService {
 
     const now = new Date();
 
-    return this.prisma.$transaction(async (tx) => {
+    const confirmation = await this.prisma.$transaction(async (tx) => {
       // 1. Validate registration session token
       const session = await tx.visitorRegistrationSession.findUnique({
         where: { sessionToken: dto.sessionToken },
@@ -132,6 +136,11 @@ export class RegistrationsService {
           'Registration successful! Watch the main wheel display for your reference number.',
       };
     });
+
+    // Notify only after commit: displays can now fetch the saved visitor.
+    // The event is an invalidation signal, never a broadcast of visitor PII.
+    this.realtime.emitQueueUpdated({ reason: 'registered' });
+    return confirmation;
   }
 
   /**

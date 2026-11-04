@@ -47,3 +47,6 @@ Thumbs.db
 .turbo
 .vite
 *.tsbuildinfo
+
+# Uploaded merchant assets
+/uploads/

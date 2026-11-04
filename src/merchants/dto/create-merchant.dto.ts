@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsNotEmpty,
@@ -51,7 +52,7 @@ export class UpdateMerchantDto {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  logoUrl?: string;
+  logoUrl?: string | null;
 
   @ApiProperty({ required: false })
   @IsString()
@@ -69,6 +70,7 @@ export class UpdateMerchantDto {
   contactPhone?: string;
 
   @ApiProperty({ required: false })
+  @Transform(({ obj }) => obj.isActive === 'false' ? false : obj.isActive === 'true' ? true : obj.isActive)
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;

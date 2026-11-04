@@ -131,6 +131,7 @@ export class RealtimeGateway
 
   emitQueueUpdated(queueData: any) {
     if (this.server) {
+      this.server.to('room:wheel').emit('queue:updated', queueData);
       this.server.to('room:staff-queue').emit('queue:updated', queueData);
       this.server.to('room:admin').emit('queue:updated', queueData);
     }

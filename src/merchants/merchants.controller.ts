@@ -1,3 +1,5 @@
+import { FileInterceptor } from '@nestjs/platform-express';
+import { merchantLogoOptions, withMerchantLogo } from './merchant-logo';
 import {
   Controller,
   Get,
@@ -8,6 +10,8 @@ import {
   Body,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { MerchantsService } from './merchants.service';
@@ -27,12 +31,16 @@ export class MerchantsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new merchant/sponsor' })
+  @UseInterceptors(FileInterceptor('logo', merchantLogoOptions))
   async create(
+    @UploadedFile() logo: { buffer: Buffer } | undefined,
     @Body() dto: CreateMerchantDto,
     @CurrentUser('id') userId: string,
     @CurrentUser('email') userEmail: string,
   ) {
-    return this.merchantsService.create(dto, userId, userEmail);
+    return withMerchantLogo(logo, (url) =>
+      this.merchantsService.create({ ...dto, logoUrl: url ?? dto.logoUrl }, userId, userEmail),
+    );
   }
 
   @Get()
@@ -51,13 +59,17 @@ export class MerchantsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update merchant details' })
+  @UseInterceptors(FileInterceptor('logo', merchantLogoOptions))
   async update(
+    @UploadedFile() logo: { buffer: Buffer } | undefined,
     @Param('id') id: string,
     @Body() dto: UpdateMerchantDto,
     @CurrentUser('id') userId: string,
     @CurrentUser('email') userEmail: string,
   ) {
-    return this.merchantsService.update(id, dto, userId, userEmail);
+    return withMerchantLogo(logo, (url) =>
+      this.merchantsService.update(id, { ...dto, logoUrl: url ?? dto.logoUrl }, userId, userEmail),
+    );
   }
 
   @Delete(':id')

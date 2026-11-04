@@ -1,3 +1,5 @@
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { merchantLogoDirectory, merchantLogoPath } from './merchants/merchant-logo';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -8,7 +10,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Security headers
   app.use(
@@ -25,6 +27,8 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
+
+  app.useStaticAssets(merchantLogoDirectory, { prefix: merchantLogoPath, index: false });
 
   // REST API version prefix
   app.setGlobalPrefix('api/v1');

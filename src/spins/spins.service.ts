@@ -12,6 +12,10 @@ import { PacingCalculator } from '../common/utils/pacing.calculator';
 import { PriorityCurveCalculator } from '../common/utils/priority-curve.calculator';
 import { ExecuteSpinDto } from './dto/execute-spin.dto';
 
+const rewardWithMerchant = {
+  include: { merchant: { select: { name: true, logoUrl: true } } },
+} as const;
+
 @Injectable()
 export class SpinsService {
   private readonly logger = new Logger(SpinsService.name);
@@ -32,7 +36,7 @@ export class SpinsService {
     const existingByIdempotency = await this.prisma.spinRecord.findUnique({
       where: { idempotencyKey },
       include: {
-        reward: true,
+        reward: rewardWithMerchant,
         wheelSlice: true,
         participation: true,
       },
@@ -54,7 +58,7 @@ export class SpinsService {
         },
         spin: {
           include: {
-            reward: true,
+            reward: rewardWithMerchant,
             wheelSlice: true,
             participation: true,
           },
@@ -335,7 +339,7 @@ export class SpinsService {
             completedAt: new Date(),
           },
           include: {
-            reward: true,
+            reward: rewardWithMerchant,
             wheelSlice: true,
             participation: true,
           },
@@ -376,7 +380,7 @@ export class SpinsService {
           OR: [{ idempotencyKey }, { participationId }],
         },
         include: {
-          reward: true,
+          reward: rewardWithMerchant,
           wheelSlice: true,
           participation: true,
         },
@@ -400,7 +404,7 @@ export class SpinsService {
     const spin = await this.prisma.spinRecord.findUnique({
       where: { participationId },
       include: {
-        reward: true,
+        reward: rewardWithMerchant,
         wheelSlice: true,
         participation: true,
       },
@@ -432,6 +436,7 @@ export class SpinsService {
             type: spin.reward.type,
             colorHex: spin.reward.colorHex,
             iconUrl: spin.reward.iconUrl,
+            merchant: spin.reward.merchant ?? null,
           }
         : null,
       completedAt: spin.completedAt,

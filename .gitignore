@@ -1,5 +1,6 @@
 # Compiled output
 dist
+dist-ssr
 build
 generated
 /generated/prisma
@@ -44,4 +45,5 @@ Thumbs.db
 # Temporary files and caches
 .cache
 .turbo
+.vite
 *.tsbuildinfo

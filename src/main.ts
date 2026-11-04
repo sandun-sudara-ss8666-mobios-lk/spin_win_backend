@@ -31,7 +31,7 @@ async function bootstrap() {
   app.useStaticAssets(merchantLogoDirectory, { prefix: merchantLogoPath, index: false });
 
   // REST API version prefix
-  app.setGlobalPrefix('api/v1');
+  // app.setGlobalPrefix('api/v1');
 
   // Global exception filter and response envelope
   app.useGlobalFilters(new HttpExceptionFilter());

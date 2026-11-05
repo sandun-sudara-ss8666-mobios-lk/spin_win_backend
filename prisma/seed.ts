@@ -86,6 +86,14 @@ async function main() {
   // 3. Merchants
   const merchantsData = [
     {
+      name: 'Eventure',
+      slug: 'eventure',
+    },
+    {
+      name: 'TEXTWARE',
+      slug: 'textware',
+    },
+    {
       name: 'MobiOs',
       slug: 'mobios',
       primaryColor: '#0052CC',
@@ -133,6 +141,58 @@ async function main() {
 
   // 4. Rewards (Limited, Unlimited, and NO_WIN)
   const rewardsData = [
+    {
+      slug: 'textware-manamala-kurullo',
+      merchantSlug: 'textware',
+      name: 'මනමාල කුරුල්ලෝ',
+      description: 'Discount මිල LKR 1000',
+      shortLabel: 'මනමාල කුරුල්ලෝ',
+      type: 'VOUCHER',
+      inventoryMode: 'LIMITED',
+      distributionStrategy: 'AUTO_DAILY',
+      totalPhysicalStock: 500,
+      baselineWeight: 3,
+      colorHex: '#2563EB',
+    },
+    {
+      slug: 'textware-jack-and-maya-bean-stalk',
+      merchantSlug: 'textware',
+      name: 'ජැක් සහ මායා බෝංචි වැල',
+      description: 'Innovation Drama | 25% OFF\nශ්‍රී ලංකාවේ ප්‍රථම Digitalized Theatre Experience එක',
+      shortLabel: 'ජැක් සහ මායා බෝංචි වැල',
+      type: 'VOUCHER',
+      inventoryMode: 'LIMITED',
+      distributionStrategy: 'AUTO_DAILY',
+      totalPhysicalStock: 150,
+      baselineWeight: 3,
+      colorHex: '#8B5CF6',
+    },
+    {
+      slug: 'textware-garu-kathanayakathumani',
+      merchantSlug: 'textware',
+      name: 'ගරු කටානයකතුමනි',
+      description: '10% OFF',
+      shortLabel: 'ගරු කටානයකතුමනි',
+      type: 'VOUCHER',
+      inventoryMode: 'LIMITED',
+      distributionStrategy: 'AUTO_DAILY',
+      totalPhysicalStock: 50,
+      baselineWeight: 3,
+      colorHex: '#10B981',
+    },
+    {
+      slug: 'textware-doctors-night-sky-lounge',
+      merchantSlug: 'textware',
+      name: 'Doctors’ Night @ Sky Lounge',
+      description: '10% OFF',
+      shortLabel: 'Doctors’ Night 10% OFF',
+      type: 'VOUCHER',
+      inventoryMode: 'LIMITED',
+      distributionStrategy: 'AUTO_DAILY',
+      totalPhysicalStock: 90,
+      baselineWeight: 3,
+      colorHex: '#F59E0B',
+    },
     {
       slug: 'galaxy-fit3',
       merchantSlug: 'samsung',
@@ -269,6 +329,7 @@ async function main() {
         data: {
           merchantId,
           name: r.name,
+          description: r.description,
           shortLabel: r.shortLabel,
           type: r.type as any,
           inventoryMode: r.inventoryMode as any,

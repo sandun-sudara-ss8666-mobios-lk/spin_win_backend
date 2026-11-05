@@ -1,4 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { BadRequestException } from '@nestjs/common';
 import {
   IsNotEmpty,
   IsOptional,
@@ -8,7 +10,12 @@ import {
   Min,
   IsBoolean,
   MaxLength,
+  IsObject,
+  ValidateIf,
 } from 'class-validator';
+
+const formBoolean = ({ obj, key }: { obj: Record<string, unknown>; key: string }) =>
+  obj[key] === 'true' ? true : obj[key] === 'false' ? false : obj[key];
 
 export enum RewardTypeEnum {
   PHYSICAL = 'PHYSICAL',
@@ -89,7 +96,14 @@ export class CreateRewardDto {
   })
   @IsBoolean()
   @IsOptional()
+  @Transform(formBoolean)
   carryForward?: boolean;
+
+  @ApiProperty({ required: false, default: false, description: 'Play the uploaded reward video on a win' })
+  @Transform(formBoolean)
+  @ValidateIf((_obj, value) => value !== undefined)
+  @IsBoolean()
+  isVideoShow?: boolean;
 
   @ApiProperty({
     example: 3,
@@ -117,6 +131,12 @@ export class CreateRewardDto {
       'Custom day allocations if CUSTOM_DAILY: { [dayId]: quantity }',
   })
   @IsOptional()
+  @IsObject()
+  @Transform(({ value }) => {
+    if (typeof value !== 'string') return value;
+    try { return JSON.parse(value); }
+    catch { throw new BadRequestException('customDailyAllocations must be a JSON object'); }
+  })
   customDailyAllocations?: Record<string, number>;
 }
 
@@ -140,7 +160,20 @@ export class UpdateRewardDto {
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
+  @Transform(formBoolean)
   carryForward?: boolean;
+
+  @ApiProperty({ required: false, description: 'Play the uploaded reward video on a win' })
+  @Transform(formBoolean)
+  @ValidateIf((_obj, value) => value !== undefined)
+  @IsBoolean()
+  isVideoShow?: boolean;
+
+  @ApiProperty({ required: false, description: 'Remove the existing reward video' })
+  @Transform(formBoolean)
+  @ValidateIf((_obj, value) => value !== undefined)
+  @IsBoolean()
+  removeVideo?: boolean;
 
   @ApiProperty({ required: false })
   @IsInt()
@@ -161,6 +194,7 @@ export class UpdateRewardDto {
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
+  @Transform(formBoolean)
   isActive?: boolean;
 }
 

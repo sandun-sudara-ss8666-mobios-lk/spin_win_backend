@@ -250,6 +250,8 @@ model Reward {
   baselineWeight       Int                  @default(3) @map("baseline_weight")
   colorHex             String?              @map("color_hex") @db.VarChar(10)
   iconUrl              String?              @map("icon_url")
+  videoUrl             String?              @map("video_url")
+  isVideoShow          Boolean              @default(false) @map("is_video_show")
   createdAt            DateTime             @default(now()) @map("created_at")
   updatedAt            DateTime             @updatedAt @map("updated_at")
 

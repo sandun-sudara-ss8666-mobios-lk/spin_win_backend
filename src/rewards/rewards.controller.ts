@@ -7,12 +7,20 @@ import {
   Body,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { removeRewardVideo, rewardVideoOptions, withRewardVideo } from './reward-video';
 import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
   ApiResponse,
+  ApiConsumes,
+  ApiBody,
+  ApiExtraModels,
 } from '@nestjs/swagger';
 import { RewardsService } from './rewards.service';
 import {
@@ -26,6 +34,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('Rewards & Inventory Management')
 @Controller('rewards')
+@ApiExtraModels(CreateRewardDto, UpdateRewardDto)
 export class RewardsController {
   constructor(private readonly rewardsService: RewardsService) {}
 
@@ -35,12 +44,18 @@ export class RewardsController {
   @ApiOperation({
     summary: 'Create a new reward with stock distribution strategy',
   })
+  @ApiConsumes('application/json', 'multipart/form-data')
+  @ApiBody({ schema: { allOf: [{ $ref: '#/components/schemas/CreateRewardDto' }, {
+    type: 'object', properties: { video: { type: 'string', format: 'binary', description: 'MP4, ≤15 MB; browser checks ≤10s and ≤1080p. H.264/AAC recommended.' } },
+  }] } })
+  @UseInterceptors(FileInterceptor('video', rewardVideoOptions))
   async create(
+    @UploadedFile() video: { buffer: Buffer } | undefined,
     @Body() dto: CreateRewardDto,
     @CurrentUser('id') userId: string,
     @CurrentUser('email') userEmail: string,
   ) {
-    return this.rewardsService.create(dto, userId, userEmail);
+    return withRewardVideo(video, (url) => this.rewardsService.create(dto, userId, userEmail, url));
   }
 
   @Get()
@@ -71,13 +86,25 @@ export class RewardsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update reward metadata' })
+  @ApiConsumes('application/json', 'multipart/form-data')
+  @ApiBody({ schema: { allOf: [{ $ref: '#/components/schemas/UpdateRewardDto' }, {
+    type: 'object', properties: { video: { type: 'string', format: 'binary', description: 'MP4, ≤15 MB; browser checks ≤10s and ≤1080p. H.264/AAC recommended.' } },
+  }] } })
+  @UseInterceptors(FileInterceptor('video', rewardVideoOptions))
   async update(
+    @UploadedFile() video: { buffer: Buffer } | undefined,
     @Param('id') id: string,
     @Body() dto: UpdateRewardDto,
     @CurrentUser('id') userId: string,
     @CurrentUser('email') userEmail: string,
   ) {
-    return this.rewardsService.update(id, dto, userId, userEmail);
+    if (video && dto.removeVideo) throw new BadRequestException('Upload or remove a video, not both');
+    const previous = await this.rewardsService.findOne(id);
+    const updated = await withRewardVideo(video, (url) =>
+      this.rewardsService.update(id, dto, userId, userEmail, dto.removeVideo ? null : url),
+    );
+    if (previous.videoUrl && previous.videoUrl !== updated.videoUrl) await removeRewardVideo(previous.videoUrl);
+    return updated;
   }
 
   @Post(':id/adjust-stock')

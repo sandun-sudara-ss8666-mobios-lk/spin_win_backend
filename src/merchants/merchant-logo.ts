@@ -4,7 +4,7 @@ import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
 export const merchantLogoPath = '/api/v1/merchant-logos';
-export const merchantLogoDirectory = resolve(
+export const merchantLogoDirectory = () => resolve(
   process.env.MERCHANT_LOGO_DIR || 'uploads/merchant-logos',
 );
 export const merchantLogoOptions = { limits: { fileSize: 2 * 1024 * 1024 } };
@@ -26,8 +26,9 @@ export async function withMerchantLogo<T>(
 
   const extension = png ? 'png' : jpeg ? 'jpg' : 'webp';
   const filename = `${randomUUID()}.${extension}`;
-  const path = join(merchantLogoDirectory, filename);
-  await mkdir(merchantLogoDirectory, { recursive: true });
+  const directory = merchantLogoDirectory();
+  const path = join(directory, filename);
+  await mkdir(directory, { recursive: true });
   await writeFile(path, bytes, { flag: 'wx' });
   try {
     return await save(`${merchantLogoPath}/${filename}`);

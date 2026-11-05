@@ -1,5 +1,6 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { merchantLogoDirectory } from './merchants/merchant-logo';
+import { rewardVideoDirectory } from './rewards/reward-video';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -28,12 +29,16 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useStaticAssets(merchantLogoDirectory, {
+  app.useStaticAssets(merchantLogoDirectory(), {
     prefix: '/merchant-logos',
     index: false,
   });
 
   // Nginx owns and strips the public /api/v1/ prefix.
+  app.useStaticAssets(rewardVideoDirectory(), {
+    prefix: '/reward-videos', index: false, maxAge: '1y', immutable: true,
+  });
+
   // Global exception filter and response envelope
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());

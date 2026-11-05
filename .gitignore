@@ -50,3 +50,7 @@ Thumbs.db
 
 # Uploaded merchant assets
 /uploads/
+
+# Public environment settings (never add secrets to these files)
+.env.development
+.env.production

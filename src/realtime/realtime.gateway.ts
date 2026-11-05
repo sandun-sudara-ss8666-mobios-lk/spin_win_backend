@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { Logger, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { resolveMediaUrls } from '../common/media-url';
 
 @WebSocketGateway({
   cors: {
@@ -149,6 +150,7 @@ export class RealtimeGateway
   }
 
   emitSpinStarted(spinData: any) {
+    spinData = resolveMediaUrls(spinData);
     if (this.server) {
       this.server.to('room:wheel').emit('spin:started', spinData);
       this.server.to('room:staff-queue').emit('spin:started', spinData);
@@ -156,6 +158,7 @@ export class RealtimeGateway
   }
 
   emitSpinCompleted(spinData: any) {
+    spinData = resolveMediaUrls(spinData);
     if (this.server) {
       this.server.to('room:wheel').emit('spin:completed', spinData);
       this.server.to('room:staff-queue').emit('spin:completed', spinData);
@@ -164,6 +167,7 @@ export class RealtimeGateway
   }
 
   emitWheelConfigUpdated(configData: any) {
+    configData = resolveMediaUrls(configData);
     if (this.server) {
       this.server.to('room:wheel').emit('wheel:config_updated', configData);
       this.server.to('room:admin').emit('wheel:config_updated', configData);

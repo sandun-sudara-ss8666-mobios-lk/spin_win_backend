@@ -436,6 +436,8 @@ export class SpinsService {
             type: spin.reward.type,
             colorHex: spin.reward.colorHex,
             iconUrl: spin.reward.iconUrl,
+            videoUrl: spin.reward.videoUrl ?? null,
+            isVideoShow: spin.reward.isVideoShow ?? false,
             merchant: spin.reward.merchant ?? null,
           }
         : null,

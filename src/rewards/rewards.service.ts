@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import {
   CreateRewardDto,
   UpdateRewardDto,
@@ -23,6 +24,7 @@ export class RewardsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly realtime: RealtimeGateway,
   ) {}
 
   /**
@@ -50,7 +52,8 @@ export class RewardsService {
     return result;
   }
 
-  async create(dto: CreateRewardDto, userId?: string, userEmail?: string) {
+  async create(dto: CreateRewardDto, userId?: string, userEmail?: string, videoUrl?: string) {
+    if (dto.isVideoShow && !videoUrl) throw new BadRequestException('Upload a video before enabling Show video on win');
     if (
       dto.inventoryMode === InventoryModeEnum.LIMITED &&
       (!dto.totalPhysicalStock || dto.totalPhysicalStock <= 0)
@@ -140,6 +143,8 @@ export class RewardsService {
           baselineWeight: dto.baselineWeight ?? 3,
           colorHex: dto.colorHex || null,
           iconUrl: dto.iconUrl || null,
+          videoUrl: videoUrl || null,
+          isVideoShow: dto.isVideoShow ?? false,
         },
       });
 
@@ -278,8 +283,12 @@ export class RewardsService {
     dto: UpdateRewardDto,
     userId?: string,
     userEmail?: string,
+    videoUrl?: string | null,
   ) {
-    await this.findOne(id);
+    const previous = await this.findOne(id);
+    const nextVideoUrl = videoUrl === undefined ? previous.videoUrl : videoUrl;
+    const isVideoShow = dto.isVideoShow ?? (videoUrl === null ? false : previous.isVideoShow);
+    if (isVideoShow && !nextVideoUrl) throw new BadRequestException('Upload a video before enabling Show video on win');
 
     const updated = await this.prisma.reward.update({
       where: { id },
@@ -292,6 +301,8 @@ export class RewardsService {
         colorHex: dto.colorHex,
         iconUrl: dto.iconUrl,
         isActive: dto.isActive,
+        videoUrl,
+        isVideoShow,
       },
     });
 
@@ -304,6 +315,7 @@ export class RewardsService {
       payload: dto,
     });
 
+    this.realtime.emitWheelConfigUpdated({ rewardId: id });
     return updated;
   }
 

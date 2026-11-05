@@ -44,6 +44,8 @@ export class WheelService {
                 type: true,
                 colorHex: true,
                 iconUrl: true,
+                videoUrl: true,
+                isVideoShow: true,
                 merchant: {
                   select: { name: true, logoUrl: true, primaryColor: true },
                 },
@@ -70,6 +72,9 @@ export class WheelService {
         textColor: s.textColor,
         iconUrl: s.iconUrl || s.reward?.iconUrl || null,
         isNoWin: s.isNoWin,
+        rewardId: s.reward?.id || null,
+        videoUrl: s.reward?.videoUrl || null,
+        isVideoShow: s.reward?.isVideoShow ?? false,
         merchant: s.reward?.merchant || null,
       })),
     };

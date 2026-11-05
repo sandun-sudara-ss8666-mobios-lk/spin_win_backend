@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { resolveMediaUrls } from '../media-url';
 
 export interface ApiResponseEnvelope<T> {
   success: boolean;
@@ -30,6 +31,7 @@ export class TransformInterceptor<T> implements NestInterceptor<
 
     return next.handle().pipe(
       map((data) => {
+        data = resolveMediaUrls(data);
         // Handle paginated responses or custom meta
         if (
           data &&

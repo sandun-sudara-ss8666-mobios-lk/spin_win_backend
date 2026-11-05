@@ -86,10 +86,6 @@ async function main() {
   // 3. Merchants
   const merchantsData = [
     {
-      name: 'Eventure',
-      slug: 'eventure',
-    },
-    {
       name: 'TEXTWARE',
       slug: 'textware',
     },

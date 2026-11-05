@@ -87,6 +87,24 @@ Populates the initial admin account, 3 exhibition days, 4 merchants, 10 prizes, 
 npx prisma db seed
 ```
 
+### Production merchant and reward seed
+
+Configure the production database's exhibition and days first, then run with
+`DATABASE_URL` set to the production database (this command does not load `.env.production`):
+
+```bash
+npm run seed:production
+```
+
+This separate seed creates TEXTWARE and Eventure, and assigns all four vouchers
+only to Eventure: මනමාල කුරුල්ලෝ (500), ජැක් සහ මායා බෝංචි වැල (150),
+ගරු කටානයකතුමනි (50), and Doctors’ Night @ Sky Lounge (90).
+Initial stock is allocated across the configured exhibition days. It defaults to
+`MobiOs Spin & Win @ INFOTEL`; set `SEED_EXHIBITION_NAME` to select another exhibition.
+Reruns skip existing Eventure rewards and preserve remaining inventory and merchant
+settings. Run one seed process at a time. It creates no admin accounts, demo
+products, or wheel configuration; configure the wheel separately to include these rewards.
+
 ### 5. Start Development Server
 ```bash
 npm run start:dev

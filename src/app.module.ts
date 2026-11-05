@@ -13,8 +13,10 @@ import { WheelModule } from './wheel/wheel.module';
 import { SpinsModule } from './spins/spins.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { ReportsModule } from './reports/reports.module';
+import { HealthController } from './health.controller';
 
 @Module({
+  controllers: [HealthController],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,

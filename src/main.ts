@@ -1,5 +1,5 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { merchantLogoDirectory, merchantLogoPath } from './merchants/merchant-logo';
+import { merchantLogoDirectory } from './merchants/merchant-logo';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -28,11 +28,12 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useStaticAssets(merchantLogoDirectory, { prefix: merchantLogoPath, index: false });
+  app.useStaticAssets(merchantLogoDirectory, {
+    prefix: '/merchant-logos',
+    index: false,
+  });
 
-  // REST API version prefix
-  // app.setGlobalPrefix('api/v1');
-
+  // Nginx owns and strips the public /api/v1/ prefix.
   // Global exception filter and response envelope
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
@@ -91,7 +92,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
   logger.log(
-    `MobiOs Spin & Win backend listening on port ${port} (API: /api/v1, Docs: /api/docs)`,
+    `MobiOs Spin & Win backend listening on port ${port} (API: /, Health: /health, Docs: /api/docs)`,
   );
 }
 

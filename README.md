@@ -61,8 +61,49 @@ npm run start:dev
 The server will start on `http://localhost:3000`.
 
 - **Swagger Documentation:** `http://localhost:3000/api/docs`
-- **REST Base URL:** `http://localhost:3000/api/v1`
+- **REST Base URL:** `http://localhost:3000` (no backend route prefix)
+- **Health Check:** `http://localhost:3000/health` (public liveness check; does not query the database)
 - **Socket.IO Gateway:** `ws://localhost:3000/events`
+
+### Nginx deployment
+
+The frontend production environment uses:
+
+```env
+VITE_API_BASE_URL=https://spin-n-win.mobios.lk/api/v1/
+VITE_SOCKET_URL=https://spin-n-win.mobios.lk/api/v1/events
+```
+
+Rebuild the frontend after changing these values. Nginx must strip `/api/v1/`
+from upstream requests and support WebSocket upgrades. For example, inside the
+HTTPS server block (adjust the backend port to match `PORT`):
+
+```nginx
+location /api/v1/ {
+    proxy_pass http://127.0.0.1:3010/;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 75s;
+}
+```
+
+The trailing slash in `proxy_pass` strips the public prefix. REST requests such
+as `/api/v1/auth/login` reach `/auth/login`. Socket.IO uses namespace `/events`
+with public transport path `/api/v1/socket.io/`, forwarded to `/socket.io/`.
+Uploaded merchant logos at `/api/v1/merchant-logos/...` reach `/merchant-logos/...`.
+Swagger is available through `/api/v1/api/docs`.
+
+Check the running backend through Nginx:
+
+```bash
+curl --fail https://spin-n-win.mobios.lk/api/v1/health
+```
+
+Expected HTTP 200 response includes `"success": true` and `"data": { "status": "ok" }`.
 
 ---
 

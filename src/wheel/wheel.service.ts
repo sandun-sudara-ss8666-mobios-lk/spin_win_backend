@@ -40,6 +40,7 @@ export class WheelService {
               select: {
                 id: true,
                 name: true,
+                description: true,
                 shortLabel: true,
                 type: true,
                 colorHex: true,
@@ -73,6 +74,7 @@ export class WheelService {
         iconUrl: s.iconUrl || s.reward?.iconUrl || null,
         isNoWin: s.isNoWin,
         rewardId: s.reward?.id || null,
+        description: s.reward?.description || null,
         videoUrl: s.reward?.videoUrl || null,
         isVideoShow: s.reward?.isVideoShow ?? false,
         merchant: s.reward?.merchant || null,

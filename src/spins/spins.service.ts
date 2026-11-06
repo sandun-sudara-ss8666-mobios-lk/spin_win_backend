@@ -322,11 +322,13 @@ export class SpinsService {
           }
         }
 
-        const finalIsWin = !chosenSlice.isNoWin && chosenSlice.rewardId !== null;
+        const isSpinAgain = this.isSpinAgainReward(chosenSlice);
+        const finalIsWin = !chosenSlice.isNoWin && chosenSlice.rewardId !== null && !isSpinAgain;
 
-        // Create SpinRecord
-        const spinRecord = await tx.spinRecord.create({
-          data: {
+        // Upsert SpinRecord so that re-spins update the record cleanly without violating unique constraints
+        const spinRecord = await tx.spinRecord.upsert({
+          where: { participationId: participation.id },
+          create: {
             participationId: participation.id,
             exhibitionDayId: day.id,
             wheelConfigId: wheelConfig.id,
@@ -335,8 +337,19 @@ export class SpinsService {
             sliceIndex: chosenSlice.sliceIndex,
             isWin: finalIsWin,
             idempotencyKey,
-            status: 'COMPLETED',
-            completedAt: new Date(),
+            status: isSpinAgain ? 'SELECTED' : 'COMPLETED',
+            completedAt: isSpinAgain ? null : new Date(),
+          },
+          update: {
+            exhibitionDayId: day.id,
+            wheelConfigId: wheelConfig.id,
+            wheelSliceId: chosenSlice.id,
+            rewardId: chosenSlice.rewardId || null,
+            sliceIndex: chosenSlice.sliceIndex,
+            isWin: finalIsWin,
+            idempotencyKey,
+            status: isSpinAgain ? 'SELECTED' : 'COMPLETED',
+            completedAt: isSpinAgain ? null : new Date(),
           },
           include: {
             reward: rewardWithMerchant,
@@ -358,17 +371,31 @@ export class SpinsService {
           });
         }
 
-        // Update Participation to COMPLETED
-        await tx.participation.update({
-          where: { id: participation.id },
-          data: {
-            status: 'COMPLETED',
-            completedAt: new Date(),
-          },
-        });
+        // If NOT a spin-again, mark participation as COMPLETED. If spin-again, keep it in SELECTED so the user can spin again!
+        if (!isSpinAgain) {
+          await tx.participation.update({
+            where: { id: participation.id },
+            data: {
+              status: 'COMPLETED',
+              completedAt: new Date(),
+            },
+          });
+        } else {
+          await this.auditService.log({
+            action: 'BONUS_SPIN_AWARDED',
+            resourceType: 'Participation',
+            resourceId: participation.id,
+            payload: {
+              readableRef: participation.readableRef,
+              visitorName: participation.visitorName,
+              sliceIndex: chosenSlice.sliceIndex,
+              sliceLabel: chosenSlice.label,
+            },
+          });
+        }
 
         this.logger.log(
-          `Spin completed for ${participation.readableRef}: Slice ${chosenSlice.sliceIndex} (${chosenSlice.label}), Win: ${finalIsWin}`,
+          `Spin executed for ${participation.readableRef}: Slice ${chosenSlice.sliceIndex} (${chosenSlice.label}), Win: ${finalIsWin}, SpinAgain: ${isSpinAgain}`,
         );
 
         return this.formatSpinResponse(spinRecord, false);
@@ -419,7 +446,31 @@ export class SpinsService {
     return this.formatSpinResponse(spin, true);
   }
 
+  private isSpinAgainReward(slice: any): boolean {
+    if (!slice) return false;
+    const sliceLabel = (slice.label || '').toLowerCase();
+    const rewardName = (slice.reward?.name || '').toLowerCase();
+    const shortLabel = (slice.reward?.shortLabel || '').toLowerCase();
+
+    return (
+      sliceLabel.includes('spin again') ||
+      sliceLabel.includes('bonus spin') ||
+      sliceLabel.includes('extra spin') ||
+      sliceLabel.includes('another chance') ||
+      rewardName.includes('spin again') ||
+      rewardName.includes('bonus spin') ||
+      rewardName.includes('extra spin') ||
+      rewardName.includes('another chance') ||
+      shortLabel.includes('spin again') ||
+      shortLabel.includes('bonus spin')
+    );
+  }
+
   private formatSpinResponse(spin: any, isReplay: boolean) {
+    const isSpinAgain = this.isSpinAgainReward(
+      spin.wheelSlice || { label: spin.wheelSlice?.label, reward: spin.reward },
+    );
+
     return {
       spinId: spin.id,
       participationId: spin.participationId,
@@ -428,10 +479,12 @@ export class SpinsService {
       sliceIndex: spin.sliceIndex,
       sliceLabel: spin.wheelSlice?.label || null,
       isWin: spin.isWin,
+      isSpinAgain,
       reward: spin.reward
         ? {
             id: spin.reward.id,
             name: spin.reward.name,
+            description: spin.reward.description ?? null,
             shortLabel: spin.reward.shortLabel,
             type: spin.reward.type,
             colorHex: spin.reward.colorHex,

@@ -18,6 +18,7 @@ function database() {
   const rewards: any[] = [];
   const ledger: any[] = [];
   const allocations: any[] = [];
+  const wheelConfigs: any[] = [];
   const tx = {
     user: { upsert: jest.fn(async ({ create, update }: any) => {
       let user = users.find(u => u.email === create.email);
@@ -44,31 +45,68 @@ function database() {
       return merchant;
     }) },
     reward: {
-      findFirst: jest.fn(async ({ where }: any) => rewards.find(r => r.name === where.name && r.merchantId === where.merchantId)),
+      findFirst: jest.fn(async ({ where }: any) => rewards.find(r => r.name === where.name && (where.merchantId === undefined || r.merchantId === where.merchantId))),
+      findMany: jest.fn(async (args?: any) => args?.where?.merchantId ? rewards.filter(r => r.merchantId === args.where.merchantId) : [...rewards]),
       create: jest.fn(async ({ data }: any) => { const reward = { ...data, id: `reward-${rewards.length}` }; rewards.push(reward); return reward; }),
+      update: jest.fn(async ({ where, data }: any) => {
+        const reward = rewards.find(r => r.id === where.id);
+        if (reward) Object.assign(reward, data);
+        return reward;
+      }),
     },
     stockLedgerEntry: { create: jest.fn(async ({ data }: any) => ledger.push(data)) },
     dailyAllocation: { createMany: jest.fn(async ({ data }: any) => allocations.push(...data)) },
+    wheelConfig: {
+      findFirst: jest.fn(async ({ where }: any) => wheelConfigs.find(w => w.isPublished === where?.isPublished)),
+      create: jest.fn(async ({ data }: any) => { const wc = { ...data, id: `wheel-${wheelConfigs.length}` }; wheelConfigs.push(wc); return wc; }),
+    },
   };
-  return { users, exhibitions, days, merchants, rewards, ledger, allocations, tx, client: { $transaction: async (fn: any) => fn(tx) } };
+  return { users, exhibitions, days, merchants, rewards, ledger, allocations, wheelConfigs, tx, client: { $transaction: async (fn: any) => fn(tx) } };
 }
 
-test('creates both merchants and four Eventure vouchers with complete stock allocations', async () => {
+test('creates merchants, vouchers, Better Luck, and Bonus Spin with complete stock allocations and published wheel', async () => {
   const db = database();
   await seedProductionProducts(db.client as any);
-  expect(db.merchants.map(m => m.name)).toEqual(['TEXTWARE', 'Eventure']);
+  expect(db.merchants.map(m => m.name)).toEqual(['TEXTWARE', 'Eventure', 'BIZBUDDY']);
   expect(db.rewards.map(r => [r.name, r.totalPhysicalStock])).toEqual([
     ['මනමාල කුරුල්ලෝ', 500], ['ජැක් සහ මායා බෝංචි වැල', 150],
     ['ගරු කටානයකතුමනි', 50], ['Doctors’ Night @ Sky Lounge', 90],
+    ['Better Luck Next Time', 0], ['Bonus Spin', 0],
+    ['BIZ BUDDY - SMART Web Profile', 7500],
+    ['BIZ BUDDY - Online Web Store', 3500],
+    ['BIZ BUDDY - BIZ Card Scanner', 3500],
+    ['BIZ BUDDY - Web Landing Page', 3500],
+    ['BIZ BUDDY - SMART Card', 3500],
+    ['BIZ BUDDY - SMART Wristband', 3500],
   ]);
-  for (const reward of db.rewards) {
-    expect(reward.merchantId).toBe('eventure');
+  const physicalRewards = db.rewards.filter(r => r.totalPhysicalStock > 0);
+  for (const reward of physicalRewards) {
+    if (reward.name.startsWith('BIZ BUDDY')) {
+      expect(reward.merchantId).toBe('bizbuddy');
+      expect(reward.colorHex).toBe('#0B132B');
+    } else {
+      expect(reward.merchantId).toBe('eventure');
+    }
     expect(reward.type).toBe('VOUCHER');
     expect(reward.availablePhysicalStock).toBe(reward.totalPhysicalStock);
     expect(reward.shortLabel.length).toBeLessThanOrEqual(24);
     expect(db.allocations.filter(a => a.rewardId === reward.id).reduce((sum, a) => sum + a.allocatedQuantity, 0)).toBe(reward.totalPhysicalStock);
     expect(db.ledger.find(e => e.rewardId === reward.id).quantityDelta).toBe(reward.totalPhysicalStock);
   }
+  const bonusSpin = db.rewards.find(r => r.name === 'Bonus Spin');
+  expect(bonusSpin).toBeDefined();
+  expect(bonusSpin.shortLabel).toBe('Spin Again');
+  expect(bonusSpin.inventoryMode).toBe('NO_WIN');
+  expect(bonusSpin.merchantId).toBeNull();
+
+  const betterLuck = db.rewards.find(r => r.name === 'Better Luck Next Time');
+  expect(betterLuck).toBeDefined();
+  expect(betterLuck.shortLabel).toBe('Try Again');
+  expect(betterLuck.merchantId).toBeNull();
+
+  expect(db.wheelConfigs).toHaveLength(1);
+  expect(db.wheelConfigs[0].isPublished).toBe(true);
+  expect(db.wheelConfigs[0].slices.create).toHaveLength(12);
 });
 
 test('reruns preserve consumed stock and do not duplicate ledger entries or allocations', async () => {
@@ -76,10 +114,11 @@ test('reruns preserve consumed stock and do not duplicate ledger entries or allo
   await seedProductionProducts(db.client as any);
   db.rewards[0].availablePhysicalStock = 490;
   await seedProductionProducts(db.client as any);
-  expect(db.rewards).toHaveLength(4);
+  expect(db.rewards).toHaveLength(12);
   expect(db.rewards[0].availablePhysicalStock).toBe(490);
-  expect(db.ledger).toHaveLength(4);
-  expect(db.allocations).toHaveLength(12);
+  expect(db.ledger).toHaveLength(10);
+  expect(db.allocations).toHaveLength(30);
+  expect(db.wheelConfigs).toHaveLength(1);
 });
 
 test('creates an admin with a hashed password and an exhibition with explicit days', async () => {
@@ -155,5 +194,5 @@ test('fills missing exhibition days without replacing configured days', async ()
   expect(db.days).toHaveLength(3);
   expect(db.days[0]).toMatchObject({ label: 'Opening Day', status: 'IN_PROGRESS' });
   expect(db.days[1]).toMatchObject({ date: '2026-11-07', pacingStartTime: '08:00:00', pacingEndTime: '17:00:00' });
-  expect(db.allocations).toHaveLength(12);
+  expect(db.allocations).toHaveLength(30);
 });

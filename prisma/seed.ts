@@ -309,6 +309,18 @@ async function main() {
       baselineWeight: 8,
       colorHex: '#94A3B8',
     },
+    {
+      slug: 'bonus-spin',
+      merchantSlug: 'mobios',
+      name: 'Bonus Spin',
+      shortLabel: 'Spin Again',
+      type: 'NO_WIN',
+      inventoryMode: 'NO_WIN',
+      distributionStrategy: 'EXHIBITION_WIDE',
+      totalPhysicalStock: 0,
+      baselineWeight: 6,
+      colorHex: '#06B6D4',
+    },
   ];
 
   const rewardSlugMap = new Map<string, string>();
@@ -393,7 +405,7 @@ async function main() {
       { sliceIndex: 6, slug: 'singer-voucher', isNoWin: false, label: 'Singer 2K', bg: '#D97706', text: '#FFFFFF' },
       { sliceIndex: 7, slug: 'digital-badge', isNoWin: false, label: 'VIP Pass', bg: '#4F46E5', text: '#FFFFFF' },
       { sliceIndex: 8, slug: 'mobios-tshirt', isNoWin: false, label: 'T-Shirt', bg: '#7C3AED', text: '#FFFFFF' },
-      { sliceIndex: 9, slug: 'no-win-spin', isNoWin: true, label: 'Try Again', bg: '#64748B', text: '#FFFFFF' },
+      { sliceIndex: 9, slug: 'bonus-spin', isNoWin: false, label: 'Spin Again', bg: '#06B6D4', text: '#FFFFFF' },
       { sliceIndex: 10, slug: 'mobios-tech-pouch', isNoWin: false, label: 'Tech Pouch', bg: '#0891B2', text: '#FFFFFF' },
       { sliceIndex: 11, slug: 'mobios-metal-pen', isNoWin: false, label: 'Stylus Pen', bg: '#475569', text: '#FFFFFF' },
     ];

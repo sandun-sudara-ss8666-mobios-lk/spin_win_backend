@@ -290,12 +290,30 @@ export class RewardsService {
     const isVideoShow = dto.isVideoShow ?? (videoUrl === null ? false : previous.isVideoShow);
     if (isVideoShow && !nextVideoUrl) throw new BadRequestException('Upload a video before enabling Show video on win');
 
+    let merchantIdToSet: string | null | undefined = undefined;
+    if (dto.merchantId !== undefined) {
+      if (!dto.merchantId || (typeof dto.merchantId === 'string' && dto.merchantId.trim() === '')) {
+        merchantIdToSet = null;
+      } else {
+        const merchant = await this.prisma.merchant.findUnique({
+          where: { id: dto.merchantId },
+        });
+        if (!merchant) {
+          throw new BadRequestException(
+            `Merchant with ID ${dto.merchantId} not found`,
+          );
+        }
+        merchantIdToSet = dto.merchantId;
+      }
+    }
+
     const updated = await this.prisma.reward.update({
       where: { id },
       data: {
         name: dto.name ? dto.name.trim() : undefined,
         description: dto.description,
         shortLabel: dto.shortLabel ? dto.shortLabel.trim() : undefined,
+        merchantId: merchantIdToSet !== undefined ? merchantIdToSet : undefined,
         carryForward: dto.carryForward,
         baselineWeight: dto.baselineWeight,
         colorHex: dto.colorHex,
@@ -303,6 +321,9 @@ export class RewardsService {
         isActive: dto.isActive,
         videoUrl,
         isVideoShow,
+      },
+      include: {
+        merchant: true,
       },
     });
 

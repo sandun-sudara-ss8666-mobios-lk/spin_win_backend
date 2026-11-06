@@ -141,6 +141,15 @@ export class CreateRewardDto {
 }
 
 export class UpdateRewardDto {
+  @ApiProperty({
+    required: false,
+    description: 'Sponsoring Merchant ID (or null/empty to clear sponsor)',
+  })
+  @ValidateIf((_obj, value) => value !== null && value !== undefined)
+  @IsString()
+  @IsOptional()
+  merchantId?: string | null;
+
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()

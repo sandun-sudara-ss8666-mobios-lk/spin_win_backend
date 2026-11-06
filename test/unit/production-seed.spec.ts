@@ -67,7 +67,7 @@ function database() {
 test('creates merchants, vouchers, Better Luck, and Bonus Spin with complete stock allocations and published wheel', async () => {
   const db = database();
   await seedProductionProducts(db.client as any);
-  expect(db.merchants.map(m => m.name)).toEqual(['TEXTWARE', 'Eventure', 'BIZBUDDY']);
+  expect(db.merchants.map(m => m.name)).toEqual(['TEXTWARE', 'Eventure', 'BIZBUDDY', 'Rich Look']);
   expect(db.rewards.map(r => [r.name, r.totalPhysicalStock])).toEqual([
     ['මනමාල කුරුල්ලෝ', 500], ['ජැක් සහ මායා බෝංචි වැල', 150],
     ['ගරු කටානයකතුමනි', 50], ['Doctors’ Night @ Sky Lounge', 90],
@@ -78,12 +78,16 @@ test('creates merchants, vouchers, Better Luck, and Bonus Spin with complete sto
     ['BIZ BUDDY - Web Landing Page', 3500],
     ['BIZ BUDDY - SMART Card', 3500],
     ['BIZ BUDDY - SMART Wristband', 3500],
+    ['Rs 1000 gift voucher', 10],
   ]);
   const physicalRewards = db.rewards.filter(r => r.totalPhysicalStock > 0);
   for (const reward of physicalRewards) {
     if (reward.name.startsWith('BIZ BUDDY')) {
       expect(reward.merchantId).toBe('bizbuddy');
       expect(reward.colorHex).toBe('#0B132B');
+    } else if (reward.name === 'Rs 1000 gift voucher') {
+      expect(reward.merchantId).toBe('rich-look');
+      expect(reward.colorHex).toBe('#FFFFFF');
     } else {
       expect(reward.merchantId).toBe('eventure');
     }
@@ -114,10 +118,10 @@ test('reruns preserve consumed stock and do not duplicate ledger entries or allo
   await seedProductionProducts(db.client as any);
   db.rewards[0].availablePhysicalStock = 490;
   await seedProductionProducts(db.client as any);
-  expect(db.rewards).toHaveLength(12);
+  expect(db.rewards).toHaveLength(13);
   expect(db.rewards[0].availablePhysicalStock).toBe(490);
-  expect(db.ledger).toHaveLength(10);
-  expect(db.allocations).toHaveLength(30);
+  expect(db.ledger).toHaveLength(11);
+  expect(db.allocations).toHaveLength(33);
   expect(db.wheelConfigs).toHaveLength(1);
 });
 
@@ -194,5 +198,5 @@ test('fills missing exhibition days without replacing configured days', async ()
   expect(db.days).toHaveLength(3);
   expect(db.days[0]).toMatchObject({ label: 'Opening Day', status: 'IN_PROGRESS' });
   expect(db.days[1]).toMatchObject({ date: '2026-11-07', pacingStartTime: '08:00:00', pacingEndTime: '17:00:00' });
-  expect(db.allocations).toHaveLength(30);
+  expect(db.allocations).toHaveLength(33);
 });

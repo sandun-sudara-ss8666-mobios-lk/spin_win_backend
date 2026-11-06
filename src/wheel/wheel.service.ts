@@ -346,7 +346,7 @@ export class WheelService {
       payload: { name: updated.name, version: updated.version },
     });
 
-    return updated;
+    return { ...updated, isActive: true };
   }
 
   async deactivatePriorityList(
@@ -375,11 +375,11 @@ export class WheelService {
       resourceId: updated.id,
     });
 
-    return updated;
+    return { ...updated, isActive: false };
   }
 
   async getAllPriorityLists() {
-    return this.prisma.priorityList.findMany({
+    const lists = await this.prisma.priorityList.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
         items: {
@@ -388,6 +388,11 @@ export class WheelService {
         },
       },
     });
+
+    return lists.map((list) => ({
+      ...list,
+      isActive: list.status === 'PUBLISHED',
+    }));
   }
 
   /**

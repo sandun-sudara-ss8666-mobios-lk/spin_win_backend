@@ -28,7 +28,7 @@ export async function withRewardVideo<T>(
     throw new BadRequestException('Video must be an MP4 file');
   }
 
-  // Duration and resolution are checked by the browser before upload.
+  // Resolution is checked by the browser before upload.
   // A container signature alone does not verify codecs or playback compatibility.
   const filename = `${randomUUID()}.mp4`;
   const directory = rewardVideoDirectory();

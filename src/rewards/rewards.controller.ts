@@ -46,7 +46,7 @@ export class RewardsController {
   })
   @ApiConsumes('application/json', 'multipart/form-data')
   @ApiBody({ schema: { allOf: [{ $ref: '#/components/schemas/CreateRewardDto' }, {
-    type: 'object', properties: { video: { type: 'string', format: 'binary', description: 'MP4, ≤15 MB; browser checks ≤10s and ≤1080p. H.264/AAC recommended.' } },
+    type: 'object', properties: { video: { type: 'string', format: 'binary', description: 'MP4, ≤15 MB, ≤1080p. H.264/AAC recommended.' } },
   }] } })
   @UseInterceptors(FileInterceptor('video', rewardVideoOptions))
   async create(
@@ -88,7 +88,7 @@ export class RewardsController {
   @ApiOperation({ summary: 'Update reward metadata' })
   @ApiConsumes('application/json', 'multipart/form-data')
   @ApiBody({ schema: { allOf: [{ $ref: '#/components/schemas/UpdateRewardDto' }, {
-    type: 'object', properties: { video: { type: 'string', format: 'binary', description: 'MP4, ≤15 MB; browser checks ≤10s and ≤1080p. H.264/AAC recommended.' } },
+    type: 'object', properties: { video: { type: 'string', format: 'binary', description: 'MP4, ≤15 MB, ≤1080p. H.264/AAC recommended.' } },
   }] } })
   @UseInterceptors(FileInterceptor('video', rewardVideoOptions))
   async update(

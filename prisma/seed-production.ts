@@ -122,6 +122,18 @@ const bizbuddyRewards = [
   },
 ];
 
+const richLookRewards = [
+  {
+    name: 'Rs 1000 gift voucher',
+    description: 'Rs 1000 gift voucher',
+    shortLabel: 'Rs 1000 Voucher',
+    totalPhysicalStock: 10,
+    colorHex: '#FFFFFF',
+    type: 'VOUCHER' as const,
+    inventoryMode: 'LIMITED' as const,
+  },
+];
+
 export async function seedProductionProducts(prisma: PrismaClient) {
   const adminEmail = process.env.INITIAL_ADMIN_EMAIL?.trim().toLowerCase();
   const adminPassword = process.env.INITIAL_ADMIN_PASSWORD;
@@ -195,6 +207,11 @@ export async function seedProductionProducts(prisma: PrismaClient) {
       update: {},
       create: { name: 'BIZBUDDY', slug: 'bizbuddy', primaryColor: '#0B132B' },
     });
+    const richLook = await tx.merchant.upsert({
+      where: { slug: 'rich-look' },
+      update: { primaryColor: '#FFFFFF' },
+      create: { name: 'Rich Look', slug: 'rich-look', primaryColor: '#FFFFFF' },
+    });
 
     const rewardsToSeed = [
       ...eventureRewards.map(r => ({
@@ -205,6 +222,11 @@ export async function seedProductionProducts(prisma: PrismaClient) {
       ...bizbuddyRewards.map(r => ({
         ...r,
         targetMerchantId: bizbuddy.id,
+        isDirectReward: false,
+      })),
+      ...richLookRewards.map(r => ({
+        ...r,
+        targetMerchantId: richLook.id,
         isDirectReward: false,
       })),
     ];
@@ -323,7 +345,7 @@ export async function seedProductionProducts(prisma: PrismaClient) {
 if (require.main === module) {
   const prisma = new PrismaClient();
   seedProductionProducts(prisma)
-    .then(() => console.log('Production seed completed: admin, exhibition, days, TEXTWARE, Eventure, BIZBUDDY, and rewards.'))
+    .then(() => console.log('Production seed completed: admin, exhibition, days, TEXTWARE, Eventure, BIZBUDDY, Rich Look, and rewards.'))
     .catch((error: unknown) => {
       console.error('Production seed failed:', error);
       process.exitCode = 1;
